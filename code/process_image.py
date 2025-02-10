@@ -461,8 +461,8 @@ def grade_part3(df, student_answer_dict):
     
 def main():
     remove_trash_images()
-    p1, p2, p3, sbd, made = get_full_answers("form2.png")
-    df = pd.read_csv("/home/anonymous/code/AI/project/answer_key.csv")
+    p1, p2, p3, sbd, made = get_full_answers("AUTOGRADE/dataset/form2.png")
+    df = pd.read_csv("AUTOGRADE/answer_key.csv")
     diemp1 = grade_part1(df, p1)
     diemp2 = grade_part2(df, p2)
     diemp3 = grade_part3(df, p3)
@@ -470,7 +470,7 @@ def main():
     # print(sbd_str)
     made_str = ''.join([''.join(val) for val in made.values()])
     # print(made_str)
-    img = cv2.imread("form2.png")
+    img = cv2.imread("AUTOGRADE/dataset/form2.png")
     cv2.putText(img, diemp1, (400, 280), cv2.FONT_HERSHEY_SIMPLEX, 
             0.5, (0, 0, 255), 2, cv2.LINE_AA)
     cv2.putText(img, diemp2, (400, 490), cv2.FONT_HERSHEY_SIMPLEX, 
@@ -481,8 +481,8 @@ def main():
             0.5, (0, 0, 255), 2, cv2.LINE_AA)
     cv2.putText(img, made_str, (540, 50), cv2.FONT_HERSHEY_SIMPLEX, 
             0.5, (0, 0, 255), 2, cv2.LINE_AA)
-# Hiển thị ảnh
-    cv2.imshow("Image with Text", img)
+
+    cv2.imshow("Your score", img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 if __name__ == '__main__':
