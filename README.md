@@ -1,74 +1,182 @@
 # AUTOGRADE
 
-<h1>Overview</h1>
+AUTOGRADE là công cụ chấm phiếu trả lời trắc nghiệm bằng xử lý ảnh và mô hình CNN. Project đọc ảnh phiếu, tự căn chỉnh ảnh theo 4 marker góc, tách các vùng đáp án, nhận diện ô đã tô và so sánh với đáp án trong `answer_key.csv`.
 
-The Automated Grading System is a powerful tool designed to evaluate student answers based on predefined correct responses. Using advanced image processing and deep learning techniques, the system extracts and compares answers, providing accurate scores efficiently.
+## Tính năng chính
 
-<h1>Features </h1>
+- Chấm phiếu từ ảnh scan hoặc ảnh chụp điện thoại.
+- Tự xử lý ảnh bị xoay 90/180/270 độ.
+- Tự nắn phối cảnh khi ảnh chụp bị nghiêng.
+- Chấp nhận ảnh có thêm viền trắng hoặc bị cắt bớt viền nhẹ, miễn là còn thấy đủ 4 ô vuông đen ở góc phiếu.
+- Xuất ảnh đã căn chỉnh và ảnh đã ghi điểm vào thư mục `outputs/`.
+- Hỗ trợ debug bằng ảnh contour/alignment để kiểm tra lỗi crop hoặc lỗi nhận marker.
 
-<b>Automatic Answer Detection:</b> Extracts student responses from scanned answer sheets.
+## Công nghệ sử dụng
 
-<b>Customizable Answer Key:</b> Allows predefined correct answers for flexible grading.
+- Python
+- OpenCV
+- TensorFlow/Keras
+- NumPy
+- Pandas
+- imutils
 
-<b>Multi-Format Support:</b> Works with handwritten, printed, or digital responses.
+## Cài đặt
 
-<b>Efficient Processing:</b> Reduces manual effort and speeds up grading.
+Yêu cầu có Conda trên máy.
 
-<b>Detailed Reports:</b> Generates comprehensive feedback for students.
+```bash
+git clone https://github.com/quocbao2772004/AUTOGRADE.git
+cd AUTOGRADE
 
-<h1>Technologies Used</h1>
+conda create -n autograde python=3.10 pip -y
+conda activate autograde
+pip install -r requirements.txt
+```
 
-<b>Python:</b>Python: Core programming language.
+Nếu đã có environment `autograde`, chỉ cần:
 
-<b>OpenCV: </b>Image processing and object detection.
+```bash
+conda activate autograde
+pip install -r requirements.txt
+```
 
-<b>Pandas:</b> Data processing and analysis.
+## Cách chạy
 
-<b>Convolutional Neural Networks (CNNs):</b> Deep learning model for detecting marked answers.
+Chấm một ảnh phiếu bất kỳ:
 
-<h1>Installation</h1>
+```bash
+python code/process_image.py path/to/student_photo.jpg
+```
 
-1.Clone the repository:
+Ví dụ với ảnh mẫu trong repo:
 
-    git clone https://github.com/quocbao2772004/AUTOGRADE.git
+```bash
+python code/process_image.py dataset/form2.png
+```
 
-    cd code
+Script sẽ lưu kết quả mặc định vào:
 
-2.Install dependencies:
+```text
+outputs/<ten_anh>_aligned.jpg
+outputs/<ten_anh>_graded.jpg
+```
 
-    pip install -r requirements.txt
+Trong đó:
 
-3.Run the main script:
+- `_aligned.jpg`: ảnh đã được xoay/nắn phối cảnh về form chuẩn.
+- `_graded.jpg`: ảnh đã được ghi điểm, số báo danh và mã đề.
 
-    python process_image.py
+## Tuỳ chọn CLI
 
-<h1>Usage</h1>
+Hiển thị ảnh kết quả bằng OpenCV:
 
-Provide scanned images of answer sheets.
+```bash
+python code/process_image.py path/to/student_photo.jpg --show
+```
 
-Detect empty answer regions using OpenCV.
+Chỉ định nơi lưu ảnh kết quả:
 
-Use a CNN model to determine whether the bubbles are filled or not.
+```bash
+python code/process_image.py path/to/student_photo.jpg --output outputs/result.jpg
+```
 
-Define the answer key in a CSV file.
+Lưu ảnh debug contour/alignment:
 
-Run the grading script to automatically evaluate responses.
+```bash
+python code/process_image.py path/to/student_photo.jpg --debug-dir outputs/debug
+```
 
-Retrieve the results from the output folder.
+Bỏ qua bước căn chỉnh tự động, chỉ dùng khi ảnh đã là form chuẩn:
 
-<h1>Preview</h1>
-Use OpenCV to detect table
+```bash
+python code/process_image.py path/to/student_photo.jpg --no-align
+```
 
-![alt text](image-2.png)
+## Dữ liệu đầu vào
 
-Use CNN to detect colored cells
+Ảnh đầu vào nên đảm bảo:
 
-![alt text](image-1.png)
+- Thấy đủ 4 ô vuông đen ở 4 góc phiếu.
+- Phiếu không bị che khuất vùng đáp án.
+- Ảnh không quá mờ hoặc quá tối.
+- Nếu crop ảnh, không crop vào 4 marker góc.
 
-Create an answer table
+Nếu marker góc bị mất hoặc bị cắt quá nhiều, chương trình sẽ báo lỗi dạng:
 
-![alt text](image-3.png)
+```text
+Alignment confidence too low (...). Make sure all four black corner markers are visible and not cropped.
+```
 
-Autograde
+## Đáp án
 
-![alt text](<Screenshot from 2025-02-10 20-16-43.png>)
+Đáp án đúng được đọc từ:
+
+```text
+answer_key.csv
+```
+
+Các cột chính:
+
+- `Section`: phần của đề, ví dụ `I`, `II`, `III`.
+- `Question`: số câu.
+- `Sub-question`: ý nhỏ, dùng cho phần II.
+- `Answer`: đáp án đúng.
+
+## Output và debug
+
+Các file runtime được sinh trong `outputs/`:
+
+```text
+outputs/
+  <ten_anh>_aligned.jpg
+  <ten_anh>_graded.jpg
+  debug/
+    aligned_sheet.jpg
+    all_contours.jpg
+    highlighted_contours.jpg
+  cropped_images/
+    form/
+```
+
+Thư mục `outputs/` được ignore khỏi Git vì chỉ là kết quả chạy local.
+
+## Kiểm thử đã chạy
+
+Pipeline đã được kiểm thử với các biến thể từ `dataset/form2.png`:
+
+- Ảnh gốc.
+- Xoay 90/180/270 độ.
+- Xoay lệch nhẹ `+8` và `-13` độ.
+- Thêm viền trắng đều và lệch.
+- Cắt bớt viền 10px, 20px, 25px nhưng vẫn giữ marker.
+- Ảnh phối cảnh giả lập kiểu chụp điện thoại.
+
+Các trường hợp trên đều cho cùng kết quả:
+
+```text
+part1: 10/40
+part2: 16/32
+part3: 2/6
+student_id: 025769
+exam_code: 838
+```
+
+Trường hợp crop vào marker góc sẽ bị từ chối sớm bằng lỗi alignment confidence thấp.
+
+## Preview
+
+Detect table:
+
+![Detect table](image-2.png)
+
+CNN detect marked cells:
+
+![Detect marked cells](image-1.png)
+
+Answer table:
+
+![Answer table](image-3.png)
+
+Autograde result:
+
+![Autograde result](<Screenshot from 2025-02-10 20-16-43.png>)
