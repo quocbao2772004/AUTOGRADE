@@ -3,3 +3,5 @@ imutils
 numpy
 pandas
 tensorflow
+flask
+google-genai

@@ -1,3 +1,5 @@
 outputs/
 __pycache__/
 *.py[cod]
+web/data/
+.env

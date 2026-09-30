@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Autograde{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="{{ url_for('index') }}">Autograde</a>
+    <nav>
+      {% if user %}
+      <span class="who">{{ user.name }}</span>
+      <form action="{{ url_for('logout') }}" method="post">
+        <button class="text-button" type="submit">Đăng xuất</button>
+      </form>
+      {% else %}
+      <a href="{{ url_for('login') }}">Đăng nhập</a>
+      <a class="pill" href="{{ url_for('register') }}">Đăng ký</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% block body %}{% endblock %}
+  </main>
+  <div class="modal" id="image-modal" hidden>
+    <button class="modal-backdrop" type="button" data-close aria-label="Đóng"></button>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-caption">
+      <button class="modal-close" type="button" data-close aria-label="Đóng">Đóng</button>
+      <img id="modal-image" alt="">
+      <p id="modal-caption"></p>
+    </div>
+  </div>
+  <script>
+    const imageModal = document.getElementById("image-modal");
+    const modalImage = document.getElementById("modal-image");
+    const modalCaption = document.getElementById("modal-caption");
+
+    function openImageModal(src, alt) {
+      modalImage.src = src;
+      modalImage.alt = alt || "Ảnh đã tải";
+      modalCaption.textContent = alt || "";
+      imageModal.hidden = false;
+      document.body.classList.add("modal-open");
+    }
+
+    function closeImageModal() {
+      imageModal.hidden = true;
+      modalImage.removeAttribute("src");
+      document.body.classList.remove("modal-open");
+    }
+
+    document.addEventListener("click", (event) => {
+      const zoom = event.target.closest("[data-zoom]");
+      if (zoom) {
+        const image = zoom.querySelector("img") || zoom;
+        openImageModal(image.currentSrc || image.src, image.alt);
+        return;
+      }
+      if (event.target.closest("[data-close]")) closeImageModal();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !imageModal.hidden) closeImageModal();
+    });
+  </script>
+</body>
+</html>

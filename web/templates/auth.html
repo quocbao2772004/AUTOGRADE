@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · Autograde{% endblock %}
+{% block body %}
+<section class="auth">
+  <h1>{{ heading }}</h1>
+  <p class="sub">{{ lead }}</p>
+  {% if error %}<p class="banner" role="alert">{{ error }}</p>{% endif %}
+  <form class="auth-form" method="post">
+    {% if mode == "register" %}
+    <label>Tên
+      <input name="name" type="text" autocomplete="name" required value="{{ name or '' }}">
+    </label>
+    {% endif %}
+    <label>Email
+      <input name="email" type="email" autocomplete="email" required value="{{ email or '' }}">
+    </label>
+    <label>Mật khẩu
+      <input name="password" type="password" autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}" required>
+    </label>
+    <button class="button" type="submit">{{ heading }}</button>
+  </form>
+  {% if mode == "login" %}
+  <form class="demo-form" method="post">
+    <input type="hidden" name="email" value="{{ demo_email }}">
+    <input type="hidden" name="password" value="{{ demo_password }}">
+    <button class="button quiet" type="submit">Vào bằng tài khoản demo</button>
+  </form>
+  <p class="demo-cred"><span>{{ demo_email }}</span><span>{{ demo_password }}</span></p>
+  {% endif %}
+  <p class="switch">
+    {% if mode == "register" %}
+    Đã có tài khoản? <a href="{{ url_for('login') }}">Đăng nhập</a>
+    {% else %}
+    Chưa có tài khoản? <a href="{{ url_for('register') }}">Đăng ký</a>
+    {% endif %}
+  </p>
+</section>
+{% endblock %}

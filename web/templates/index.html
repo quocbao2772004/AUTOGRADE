@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Autograde — Chấm phiếu{% endblock %}
+{% block body %}
+<section class="hero">
+  <p class="eyebrow">Phiếu trắc nghiệm</p>
+  <h1>Chấm bài, rõ từng câu.</h1>
+  <p class="lede">Tải hoặc dán ảnh phiếu. Câu đúng có tích xanh, câu sai hiện đáp án đúng màu đỏ. Ảnh chụp ngang, dọc hoặc nghiêng đều được.</p>
+</section>
+
+{% if not user %}
+<section class="gate">
+  <h2>Đăng nhập để chấm</h2>
+  <p>Nhà tuyển dụng có thể vào thẳng bằng tài khoản demo.</p>
+  <form class="demo-form" action="{{ url_for('login') }}" method="post">
+    <input type="hidden" name="email" value="{{ demo_email }}">
+    <input type="hidden" name="password" value="{{ demo_password }}">
+    <button class="button" type="submit">Vào bằng tài khoản demo</button>
+  </form>
+  <p class="demo-cred"><span>{{ demo_email }}</span><span>{{ demo_password }}</span></p>
+  <div class="actions">
+    <a class="button quiet" href="{{ url_for('login') }}">Đăng nhập</a>
+    <a class="button quiet" href="{{ url_for('register') }}">Tạo tài khoản</a>
+  </div>
+</section>
+{% else %}
+{% if error %}<p class="banner" role="alert">{{ error }}</p>{% endif %}
+
+<form class="stack" action="{{ url_for('grade') }}" method="post" enctype="multipart/form-data" id="grade-form">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Ảnh phiếu</h2>
+      <span>Mỗi phiếu một ảnh, tối đa 20</span>
+    </div>
+    <label class="drop" id="sheet-drop">
+      <input id="sheets" name="sheets" type="file" accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff" multiple required>
+      <strong>Chọn, thả hoặc dán ảnh</strong>
+      <span>Chọn nhiều lần cũng được · JPG, PNG, WEBP · ⌘V hoặc Ctrl+V</span>
+    </label>
+    <p class="key-note" id="sheet-count" hidden></p>
+    <div class="previews" id="previews" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Đáp án</h2>
+      <a href="{{ url_for('answer_key_sample') }}">Tải file mẫu</a>
+    </div>
+    <label class="drop compact" id="key-drop">
+      <input id="answer-key" name="answer_key" type="file" accept=".csv,text/csv">
+      <strong id="key-name">Đang dùng đáp án sẵn có</strong>
+      <span>Chọn CSV nếu muốn đáp án khác</span>
+    </label>
+    <p class="key-note">{{ key_source }}{% if key_view.summary %} · {{ key_view.summary }}{% endif %}</p>
+    <h3>Phần I</h3>
+    <ol class="answers answers-i">
+      {% for item in key_view.part1 %}
+      <li><span>{{ item.question }}</span><b>{{ item.answer }}</b></li>
+      {% endfor %}
+    </ol>
+    <h3>Phần II</h3>
+    <ol class="answers-ii">
+      {% for item in key_view.part2 %}
+      <li>
+        <span>Câu {{ item.question }}</span>
+        {% for part in item.parts %}<em>{{ part.label }} {{ part.answer }}</em>{% endfor %}
+      </li>
+      {% endfor %}
+    </ol>
+    <h3>Phần III</h3>
+    <ol class="answers answers-iii">
+      {% for item in key_view.part3 %}
+      <li><span>{{ item.question }}</span><b>{{ item.answer }}</b></li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <button class="button" type="submit" id="submit">Chấm bài</button>
+</form>
+
+{% if results %}
+<section class="results">
+  <h2>Kết quả</h2>
+  {% for item in results %}
+  <article class="panel result {% if not item.ok %}bad{% endif %}">
+    <h3>{{ item.name }}</h3>
+    {% if item.ok %}
+    <div class="pair">
+      <figure>
+        <button class="zoom" type="button" data-zoom>
+          <img src="{{ item.original }}" alt="Ảnh đã tải {{ item.name }}">
+        </button>
+        <figcaption>Ảnh đã tải</figcaption>
+      </figure>
+      <figure>
+        <button class="zoom" type="button" data-zoom>
+          <img src="{{ item.image }}" alt="Ảnh đã chấm {{ item.name }}">
+        </button>
+        <figcaption>Ảnh đã chấm</figcaption>
+      </figure>
+    </div>
+    {% if item.identity_note %}<p class="note">{{ item.identity_note }}</p>{% endif %}
+    <dl class="identity">
+      <div><dt>Họ tên</dt><dd>{{ item.student_name or "—" }}</dd></div>
+      <div><dt>Ngày sinh</dt><dd>{{ item.birth_date or "—" }}</dd></div>
+      <div><dt>Phòng</dt><dd>{{ item.room or "—" }}</dd></div>
+      <div><dt>Điểm thi</dt><dd>{{ item.school or "—" }}</dd></div>
+      <div><dt>Hội đồng</dt><dd>{{ item.council or "—" }}</dd></div>
+      <div><dt>Bài thi</dt><dd>{{ item.subject or "—" }}</dd></div>
+      <div><dt>Kỳ thi</dt><dd>{{ item.exam_name or "—" }}</dd></div>
+      <div><dt>Ngày thi</dt><dd>{{ item.exam_date or "—" }}</dd></div>
+    </dl>
+    <dl>
+      <div><dt>Số báo danh</dt><dd>{{ item.student_id }}</dd></div>
+      <div><dt>Mã đề</dt><dd>{{ item.exam_code }}</dd></div>
+      <div><dt>Phần I</dt><dd>{{ item.part1 }}</dd></div>
+      <div><dt>Phần II</dt><dd>{{ item.part2 }}</dd></div>
+      <div><dt>Phần III</dt><dd>{{ item.part3 }}</dd></div>
+    </dl>
+    <a class="button quiet" href="{{ item.image }}" download>Tải ảnh đã chấm</a>
+    {% else %}
+    <p class="banner">{{ item.error }}</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endif %}
+
+<script>
+  const form = document.getElementById("grade-form");
+  if (form) {
+    const sheets = document.getElementById("sheets");
+    const key = document.getElementById("answer-key");
+    const keyName = document.getElementById("key-name");
+    const previews = document.getElementById("previews");
+    const sheetCount = document.getElementById("sheet-count");
+    const submit = document.getElementById("submit");
+    const maxSheets = 20;
+    let chosen = [];
+    let previewUrls = [];
+    let syncingFiles = false;
+
+    function isSheet(file) {
+      return file.type.startsWith("image/") || /\.(jpe?g|png|webp|bmp|tiff?)$/i.test(file.name);
+    }
+
+    function showPreviews(files) {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls = [];
+      previews.innerHTML = "";
+      if (!files.length) {
+        previews.hidden = true;
+        sheetCount.hidden = true;
+        return;
+      }
+      previews.hidden = false;
+      sheetCount.hidden = false;
+      sheetCount.textContent = files.length === 1
+        ? "1 ảnh. Chọn, thả hoặc dán thêm nếu còn phiếu."
+        : `${files.length} ảnh sẽ được chấm.`;
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        previewUrls.push(url);
+        const figure = document.createElement("figure");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "zoom";
+        button.dataset.zoom = "";
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = file.name;
+        button.append(image);
+        const tools = document.createElement("div");
+        tools.className = "preview-tools";
+        const caption = document.createElement("figcaption");
+        caption.textContent = file.name;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "text-button";
+        remove.textContent = "Bỏ";
+        remove.addEventListener("click", () => setChosen(chosen.filter((item) => item !== file)));
+        tools.append(caption, remove);
+        figure.append(button, tools);
+        previews.append(figure);
+      }
+    }
+
+    function setChosen(files) {
+      const seen = new Set();
+      const next = [];
+      let overflow = false;
+      for (const file of files) {
+        if (!isSheet(file)) continue;
+        const key = `${file.name}|${file.size}|${file.lastModified}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (next.length >= maxSheets) {
+          overflow = true;
+          break;
+        }
+        next.push(file);
+      }
+      chosen = next;
+      syncingFiles = true;
+      const transfer = new DataTransfer();
+      for (const file of chosen) transfer.items.add(file);
+      sheets.files = transfer.files;
+      syncingFiles = false;
+      showPreviews(chosen);
+      if (overflow) {
+        sheetCount.textContent += " Chỉ giữ 20 ảnh đầu.";
+      }
+    }
+
+    sheets.addEventListener("change", () => {
+      if (syncingFiles) return;
+      setChosen(chosen.concat([...sheets.files]));
+    });
+    key.addEventListener("change", () => {
+      keyName.textContent = key.files[0] ? key.files[0].name : "Đang dùng đáp án sẵn có";
+    });
+
+    function bindDrop(zone, input, onFiles) {
+      zone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        zone.classList.add("hot");
+      });
+      zone.addEventListener("dragleave", () => zone.classList.remove("hot"));
+      zone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        zone.classList.remove("hot");
+        onFiles([...event.dataTransfer.files]);
+      });
+    }
+
+    bindDrop(document.getElementById("sheet-drop"), sheets, (files) => setChosen(chosen.concat(files)));
+    bindDrop(document.getElementById("key-drop"), key, (files) => {
+      const transfer = new DataTransfer();
+      if (files[0]) transfer.items.add(files[0]);
+      key.files = transfer.files;
+      keyName.textContent = files[0] ? files[0].name : "Đang dùng đáp án sẵn có";
+    });
+
+    let pastedCount = 0;
+    const sheetDrop = document.getElementById("sheet-drop");
+
+    function imagesOnClipboard(data) {
+      const found = [];
+      if (!data) return found;
+      const items = data.items ? [...data.items] : [];
+      for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) found.push(file);
+        }
+      }
+      if (!found.length && data.files) {
+        for (const file of data.files) {
+          if (file.type.startsWith("image/")) found.push(file);
+        }
+      }
+      return found;
+    }
+
+    function namePastedFile(file) {
+      const type = file.type || "image/png";
+      const generic = !file.name || /^(image|clipboard|blob)/i.test(file.name);
+      if (!generic) return file;
+      pastedCount += 1;
+      const ext = (type.split("/")[1] || "png").replace("jpeg", "jpg").split("+")[0];
+      return new File([file], `anh-dan-${pastedCount}.${ext}`, { type });
+    }
+
+    function addSheetFiles(files) {
+      setChosen(chosen.concat(files));
+      sheetDrop.classList.add("hot");
+      window.setTimeout(() => sheetDrop.classList.remove("hot"), 500);
+    }
+
+    document.addEventListener("paste", (event) => {
+      const images = imagesOnClipboard(event.clipboardData).map(namePastedFile);
+      if (!images.length) return;
+      event.preventDefault();
+      addSheetFiles(images);
+    });
+
+    form.addEventListener("submit", () => {
+      submit.disabled = true;
+      submit.textContent = "Đang chấm…";
+    });
+  }
+</script>
+{% endblock %}
